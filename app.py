@@ -4,6 +4,12 @@ from flask import Flask, render_template, request, redirect, url_for, session
 import pymysql
 from datetime import timedelta
 from static.python import querys
+# 환경 변수 dotenv를 로드 
+from dotenv import load_dotenv
+import os
+
+# .env 파일을 로드 
+load_dotenv()
 
 # Flask라는 Class 생성
 app = Flask(__name__)
