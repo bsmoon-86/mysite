@@ -1,139 +1,47 @@
-# flask 프레임 워크 안에 특정 기능들을 로드 
-from flask import Flask, render_template, request, redirect, url_for, session
-# mysql과 연동을 하는 라이브러리 로드 
-import pymysql
-from datetime import timedelta
-from static.python import querys
-# 환경 변수 dotenv를 로드 
-from dotenv import load_dotenv
-import os
-# database.py 안에 있는 MyDB class 로드 
-from static.python.database import MyDB
+# 기본적인 웹 서버 설정 
+# flask 웹프레임워크 로드 
+from flask import Flask, render_template, request, redirect, url_for
+from database import MyDB
+import pandas as pd
 
-# .env 파일을 로드 
-load_dotenv()
-
-# Flask라는 Class 생성
+# Flask class 생성
 app = Flask(__name__)
-# secret_key 설정 (session데이터 암호화 키)
-app.secret_key = os.getenv('secret_key')
-# session의 지속시간을 설정
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(seconds=10)
 
-# MyDB class 생성
-mydb = MyDB(
-    os.getenv('host'), 
-    int(os.getenv('port')), 
-    os.getenv('user'), 
-    os.getenv('password'), 
-    os.getenv('db_name')
-)
+# MyDB Class 생성
+web_db = MyDB()
 
-
-# 메인페이지 api 생성 
-# 로그인 화면 
-@app.route("/")
+# 127.0.0.1:5000/ url 생성
+@app.route('/')
 def index():
-    # 세션에 데이터가 존재한다면?
-    if 'user_id' in session:
-        return redirect('/index')
-    else:
-        # 요청이 들어왔을 때 state라는 데이터가 존재하면 
-        try:
-            # 로그인이 실패한 경우
-            _state = request.args['state']
-        except:
-            # 처음 로그인 화면을 로드한 경우
-            _state = 1
-        # login.html 되돌려준다. 
-        return render_template('login.html', state = _state)
+    return render_template('index.html')
 
-# 로그인 화면에서 id, password 데이터를 보내는 api 생성
-@app.route("/main", methods=['post'])
-def main():
-    # 유저가 보낸 데이터 : id, password
-    # 유저가 보낸 id값의 key -> input_id
-    # 유저가 보낸 password값의 key -> input_pass
-    print(request.form)
-    _id = request.form['input_id']
-    _pass = request.form['input_pass']
-    # 받아온 데이터를 확인 
-    print(f"/main[post] -> 유저 id : {_id}, password : {_pass}")
-    # 함수 호출
-    db_result = mydb.db_execute(querys.login_query, _id, _pass)
-    # 로그인의 성공 여부 (조건식?? db_result가 존재하는가?)
-    if db_result:
-        # 로그인이 성공하는 경우 -> main.html을 되돌려준다. 
-        # session에 데이터를 저장 (dict에 새로운 키:벨류 추가)
-        session['user_id'] = _id
-        session['user_pass'] = _pass
-        return redirect('/index')
-        # return "login ok"
-    else:
-        # 로그인이 실패하는 경우 -> 로그인화면('/')으로 되돌아간다.
-        return redirect('/?state=2')
-        # return "login fail"
-# /index 주소 api 생성
-@app.route('/index')
-def index2():
-    print(session)
-    # 세션에 데이터가 존재한다면 main.html되돌려준다. 
-    if "user_id" in session:
-        return render_template('main.html')
-    # 세션에 데이터가 존재하지 않는다면 로그인화면으로 되돌아간다. 
-    else:
-        return redirect('/')
+# dashboard를 보여주는 url 생성 
+@app.route("/dashboard")
+def dashboard():
+    # 유저가 보내는 데이터 존재 : ticker 
+    # get 방식  : request.args 존재
+    ticker = request.args['ticker']
+    print(f"[get] /dashboard : {ticker} ")
+    # ticker에 따라 다른 csv을 로드 (데이터프레임)
+    # csv 파일의 경로 : ./data/filename.csv
+    df = pd.read_csv(f"./data/{ticker}.csv")
+    # 데이터프레임의 하위 50 추출
+    df = df.tail(50)
+    # Date 컬럼의 데이터를 리스트로 생성 (x축 데이터)
+    date_list = df['Date'].to_list()
+    # Adj Close 컬럼의 데이터를 리스트로 생성 (y축 데이터)
+    close_list = df['Adj Close'].to_list()
+    # 전체 데이터프레임을 dict 형태로 변환
+    dict_data = df.to_dict(orient='records')
+    # dict에서 첫번째 원소의 키값들을 리스트로 생성
+    cols_list = list(dict_data[0].keys())
+    # dashboard에 date컬럼의 리스트와 Adj Close 리스트, 
+    # dict, keys들을 모두 보낸다
+    return render_template('dashboard.html', 
+                           x_data = date_list, 
+                           y_data = close_list, 
+                           table_data = dict_data, 
+                           table_cols = cols_list)
 
-# 회원 가입 화면을 보여주는 api 생성 
-@app.route('/signup')
-def signup():
-    return render_template('signup.html')
-
-# id 사용 유무를 판단하는 api
-@app.route('/check_id', methods=['post'])
-def check_id():
-    # 프론트에서 비동기 통신으로 보내는 id 값을 변수에 저장
-    _id = request.form['input_id']
-    # 유저에게 받은 데이터 확인 
-    print(f"check_id[post] -> 유저 id : {_id}")
-
-    # 함수 호출 
-    db_result = mydb.db_execute(querys.check_id_query, _id)
-    # id가 사용가능한 경우 : db_result 존재하는 않을때
-    if db_result:
-        result = "0"
-    else:
-        result = "1"
-    return result
-
-# 회원 정보를 받아와서 데이터베이스에 삽입을 하는 api 
-@app.route('/signup2', methods=['post'])
-def signup2():
-    # 유저가 보낸 데이터를 변수에 저장 
-    _id = request.form['input_id']
-    _pass = request.form['input_pass']
-    _name = request.form['input_name']
-    print(f"/signup2[post] -> 유저 ID : {_id}, password : {_pass}, name : {_name}")
-
-    # 함수 호출 (에러가 발생하는 경우가 있으니 try 생성)
-    try:
-        db_result = mydb.db_execute(querys.signup_query, _id, _pass, _name)
-        print(db_result)
-    except:
-        db_result = 3
-    # 로그인 화면으로 되돌아간다. 
-    if db_result == 3:
-        return redirect(f'/?state={db_result}')
-    else:
-        return redirect('/')
-
-# 로그아웃
-@app.route('/logout')
-def logout():
-    # 세션 데이터를 제거
-    session.clear()
-    return redirect('/')
-
-
-# 웹서버를 실행
+# 웹서버 실행 
 app.run(debug=True)
