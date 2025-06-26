@@ -5,7 +5,13 @@ from invest import Quant
 from database import MyDB
 
 # MyDB class 생성 
-mydb = MyDB()
+mydb = MyDB(
+    _host = 'moons5386.mysql.pythonanywhere-services.com', 
+    _port = 3306, 
+    _user = 'moons5386', 
+    _pw = 'moon1234', 
+    _db_name = 'moons5386$default'
+)
 
 # Flask class 생성 
 # 생성자 함수 필요한 인자 : 파일의 이름 
@@ -98,7 +104,15 @@ def invest():
         """
     )
     # input_code를 이용해서 csv 파일을 로드 
-    df = pd.read_csv(f"csv/{input_code}.csv")
+    # local에서는 상대 경로
+    # df = pd.read_csv(f"csv/{input_code}.csv")
+    # pythonanywhere에서는 절대 경로 사용
+    df = pd.read_csv(f"/home/moons5386/mysite/csv/{input_code}.csv")
+    df.rename(
+        columns = {
+            '날짜' : 'Date'
+        }, inplace=True
+    )
     quant = Quant(df, _start = input_start_time, _end=input_end_time, _col='Close')
     if input_kind == 'bnh':
         result, rtn = quant.buyandhold()
@@ -121,6 +135,3 @@ def invest():
         'axis_y' : y
     }
     return res_data
-
-# 웹서버를 실행 
-app.run(debug=True)
