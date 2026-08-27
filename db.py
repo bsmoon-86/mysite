@@ -2,6 +2,18 @@
 # 모듈은 독립적인 영역 -> 사용할 라이브러리를 import 
 import pymysql 
 import os
+
+import ssl
+
+
+def _build_ssl_context():
+    # DB_SSL_CA : Aiven 등에서 다운받은 CA 인증서(ca.pem) 파일의 경로
+    # 이 값이 없으면 로컬 MySQL처럼 SSL 없이 접속 (기존 동작 그대로 유지)
+    ca_path = os.environ.get('DB_SSL_CA')
+    if not ca_path:
+        return None
+    return ssl.create_default_context(cafile=ca_path)
+
 # class 선언 
 class MyDB:
     # 생성자 함수 (서버의 정보를 받아오기 위해 사용)
@@ -18,6 +30,8 @@ class MyDB:
         self.user = user
         self.password = password
         self.db = db
+        # DB_SSL_CA 환경변수가 설정되어 있으면 SSL 컨텍스트를 만들어 둠 (Aiven 등 SSL 필수 서버 대응)
+        self.ssl_context = _build_ssl_context()
 
     # 데이터베이스에 변화를 주는 함수 
     def commit(self):
