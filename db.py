@@ -1,16 +1,16 @@
 # 모듈을 생성할때 중요한 부분 
 # 모듈은 독립적인 영역 -> 사용할 라이브러리를 import 
 import pymysql 
-
+import os
 # class 선언 
 class MyDB:
     # 생성자 함수 (서버의 정보를 받아오기 위해 사용)
-    def __init__(self, 
-                 host = '127.0.0.1', 
-                 port = 3306, 
-                 user = 'root', 
-                 password = '1234@', 
-                 db = 'multicam'
+    def __init__(self,
+                 host = os.environ.get('DB_HOST', '127.0.0.1'),
+                 port = int(os.environ.get('DB_PORT', 3306)),
+                 user = os.environ.get('DB_USER', 'root'),
+                 password = os.environ.get('DB_PASSWORD', '1234@'),
+                 db = os.environ.get('DB_NAME', 'multicam')
     ):
         # 서버의 정보를 인자로 받아와서 객체 내부에서 독립적인 변수에 저장
         self.host = host

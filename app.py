@@ -5,7 +5,10 @@ import pandas as pd
 from db import MyDB
 # sql 쿼리문이 저장되어 있는 커스텀 모듈
 from querys import user
-
+# .env 파일에 저장된 환경변수를 불러오기 위한 라이브러리
+# 반드시 다른 모듈(db 등)을 import 하기 "전"에 호출해야 함
+from dotenv import load_dotenv
+load_dotenv()
 # Flask class 생성 
 # __name__ : 현재 파일의 이름 
 app = Flask(__name__)
