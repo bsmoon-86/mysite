@@ -21,7 +21,7 @@ class MyDB:
                  host = os.environ.get('DB_HOST', '127.0.0.1'),
                  port = int(os.environ.get('DB_PORT', 3306)),
                  user = os.environ.get('DB_USER', 'root'),
-                 password = os.environ.get('DB_PASSWORD', '1234@'),
+                 password = os.environ.get('DB_PASSWORD', '1234'),
                  db = os.environ.get('DB_NAME', 'multicam')
     ):
         # 서버의 정보를 인자로 받아와서 객체 내부에서 독립적인 변수에 저장
@@ -30,6 +30,7 @@ class MyDB:
         self.user = user
         self.password = password
         self.db = db
+        print(self.host)
         # DB_SSL_CA 환경변수가 설정되어 있으면 SSL 컨텍스트를 만들어 둠 (Aiven 등 SSL 필수 서버 대응)
         self.ssl_context = _build_ssl_context()
 
