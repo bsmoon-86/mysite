@@ -65,6 +65,6 @@ def dashboard():
     return render_template('dashboard.html')
 
 
-
-# 웹 서버 실행 디버그모드 on
-app.run(debug=True)
+# 로컬에서 직접 실행할 때만 사용 (Render 등에서는 gunicorn app:app 으로 실행되어 이 줄은 무시됨)
+if __name__ == '__main__':
+    app.run(debug=True)
